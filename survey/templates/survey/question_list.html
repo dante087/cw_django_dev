@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{% load question_tags %}
+
 {% block content %}
     <h1>Preguntas</h1>
     <div class="d-flex flex-column">
@@ -19,7 +21,8 @@
                         <u class="fw-lighter mb-1">Respuesta</u>
                         <div>
                             {% for val in '12345' %}
-                                <a class="mx-1 answer {% if question.user_value|slugify == val %}fas{% else %}fal{% endif %} fa-star text-decoration-none"
+                                {% user_value question as question_user_value %}
+                                <a class="mx-1 answer {% if question_user_value|slugify == val %}fas{% else %}fal{% endif %} fa-star text-decoration-none"
                                    data-question="{{ question.pk }}"
                                    data-value="{{ val }}" href="#"></a>
                             {% endfor %}
@@ -28,9 +31,11 @@
                     <div class="col-4 d-flex flex-column ">
                         <u class="fw-lighter mb-1">Evalúa la pregunta</u>
                         <div>
-                            <a class="mx-1 like {% if question.user_likes %}fas{% else %}fal{% endif %} fa-thumbs-up text-decoration-none"
+                            {% user_likes question as question_user_likes %}
+                            <a class="mx-1 like {% if question_user_likes %}fas{% else %}fal{% endif %} fa-thumbs-up text-decoration-none"
                                href="#" data-question="{{ question.pk }}" data-value="like" ></a>
-                            <a class="mx-1 like {% if question.user_dislikes %}fas{% else %}fal{% endif %} fa-thumbs-up fa-flip-both text-decoration-none"
+                            {% user_dislikes question as question_user_dislikes %}
+                            <a class="mx-1 like {% if question_user_dislikes %}fas{% else %}fal{% endif %} fa-thumbs-up fa-flip-both text-decoration-none"
                                href="#" data-question="{{ question.pk }}" data-value="dislike"></a>
                         </div>
                     </div>
@@ -52,7 +57,37 @@
 
 {% block js %}
     <script>
+        $.ajaxSetup({
+            data: {csrfmiddlewaretoken: '{{ csrf_token }}'},
+        });
 
+        $('a.answer').click(function (event) {
+            event.preventDefault()
+            let value =$(this).data('value')
+            let question =$(this).data('question')
+
+            $.post(
+                '{% url "survey:question-answer" %}',
+                {"question_pk": question, "value": value},
+                function (data) {
+                    location.reload();
+                }
+            );
+        });
+
+        $('a.like').click(function (event) {
+            event.preventDefault()
+            let value = $(this).data('value')
+            let question = $(this).data('question')
+
+            $.post(
+                '{% url "survey:question-like" %}',
+                {"question_pk": question, "value": value},
+                function (data) {
+                    location.reload();
+                }
+            );
+        });
 
     </script>
 
